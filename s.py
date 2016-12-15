@@ -2,11 +2,11 @@
 procol scheme): communication topology of protocols, along with transformations on these orders '''
 
 
-def msg_replace(tups, m, new):
+def msg_replace(tups, a, new):
     out = []
     for tup in tups:
         (t1, t2, m) = tup
-        mp = [x if x != m else new for x in m]
+        mp = [x if x != a else new for x in m]
         out += [(t1, t2, mp)]
     return out
 
@@ -92,6 +92,9 @@ class PScheme:
 
     def msg_swap(self, a, b):
         return PScheme(msg_swap(self.scheme, a, b))
+
+    def msg_rename(self, a, n):
+        return PScheme(msg_replace(self.scheme, a, n))
 
     def reorder(self, i, j):
         self.scheme[i], self.scheme[j] = self.scheme[j], self.scheme[i]
@@ -192,11 +195,10 @@ real_scheme = PScheme([
     ])
 
 print("Real protocol, joined and swapped ")
-print(real_scheme_fc.id_join(Fc1, Fc2, 'F').id_swap(Alice, Bob).msg_swap(x1, x2))
+print(real_scheme_fc.id_join(Fc1, Fc2, 'F').id_swap(Alice, Bob).msg_swap(x1, x2).msg_rename('Commit', 'Submit'))
 
 print("Ideal protocol, reorder input submission:")
-print(ideal_scheme.reorder(0,1).id_rename(F_RPS, 'F'))
-
+print(ideal_scheme.reorder(0,1).id_rename(F_RPS, 'F').msg_rename('Play', 'Submit'))
 
 ''' if we modify F_RPS to modify the _other_ party, ideal is nearly exact the same as real except for activations. '''
 
@@ -219,9 +221,9 @@ print(ideal_scheme.reorder(0,1).id_rename(F_RPS, 'F'))
 ''' output from above:
 
 Real protocol, joined and swapped 
-  Bob -->     F : Commit x2
+  Bob -->     F : Submit x2
     F --> Alice : Committed
-Alice -->     F : Commit x1
+Alice -->     F : Submit x1
     F -->   Bob : Committed
   Bob -->     F : Reveal
     F --> Alice : Leak x2
@@ -229,12 +231,10 @@ Alice -->     F : Reveal
     F -->   Bob : Leak x1
 
 Ideal protocol, reorder input submission:
-  Bob -->     F : Play x2
-Alice -->     F : Play x1
-    F --> Alice : Notify
+  Bob -->     F : Submit x2
+Alice -->     F : Submit x1
 Alice -->     F : Query
     F --> Alice : Leak x2
-    F -->   Bob : Notify
   Bob -->     F : Query
     F -->   Bob : Leak x1
-'''
+    '''
