@@ -75,6 +75,8 @@ class PScheme:
         self.parties = set([t[0] for t in tups]).union(set([t[1] for t in tups]))
         self.scheme = tups
     
+    def id_rename(self, p1, new):
+        return PScheme(id_replace(self.scheme, p1, new))
 
     def id_join(self, p1, p2, new):
         if p1 not in self.parties or p2 not in self.parties:
@@ -122,6 +124,9 @@ def Input(a):
     1. env supply inputs in some order to parties
     2. protocol runs. parties activated automatically
     3. parties return their input to env, in same order as 1)
+
+
+    1 and 3 are omitted from below. activations are also omitted
 '''
 
 
@@ -137,11 +142,9 @@ ideal_scheme = PScheme([
     #(F_RPS, Bob, ['Notify']),
     (Bob, F_RPS, ['Play', x2]),
     # alice check
-    (F_RPS, Alice, ['Notify']),
     (Alice, F_RPS, ["Query"]),
     (F_RPS, Alice, ["Leak", x2]),
     # bob check
-    (F_RPS, Bob, ['Notify']),
     (Bob, F_RPS, ["Query"]),
     (F_RPS, Bob, ['Leak', x1]),
     # output return
@@ -188,11 +191,11 @@ real_scheme = PScheme([
     #(Bob, Env, ['Output'])
     ])
 
-print("Real swap: ")
-print(real_scheme_fc.id_join(Fc1, Fc2, 'F_RPS').id_swap(Alice, Bob).msg_swap(x1, x2))
+print("Real protocol, joined and swapped ")
+print(real_scheme_fc.id_join(Fc1, Fc2, 'F').id_swap(Alice, Bob).msg_swap(x1, x2))
 
-print("Ideal:")
-print(ideal_scheme)
+print("Ideal protocol, reorder input submission:")
+print(ideal_scheme.reorder(0,1).id_rename(F_RPS, 'F'))
 
 
 ''' if we modify F_RPS to modify the _other_ party, ideal is nearly exact the same as real except for activations. '''
@@ -213,3 +216,25 @@ print(ideal_scheme)
         and activations don't give away information
 '''
 
+''' output from above:
+
+Real protocol, joined and swapped 
+  Bob -->     F : Commit x2
+    F --> Alice : Committed
+Alice -->     F : Commit x1
+    F -->   Bob : Committed
+  Bob -->     F : Reveal
+    F --> Alice : Leak x2
+Alice -->     F : Reveal
+    F -->   Bob : Leak x1
+
+Ideal protocol, reorder input submission:
+  Bob -->     F : Play x2
+Alice -->     F : Play x1
+    F --> Alice : Notify
+Alice -->     F : Query
+    F --> Alice : Leak x2
+    F -->   Bob : Notify
+  Bob -->     F : Query
+    F -->   Bob : Leak x1
+'''
